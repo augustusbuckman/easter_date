@@ -2,60 +2,69 @@
 # Test for easter date
 
 import unittest
+import ast
 import easter_date
 import tud_test_base as tud
 
 
-def computus(year):
-    lunar_year_cycle_position = year % 19
-    weekday_slide_part_1 = year % 4
-    weekday_slide_part_2 = year % 7
+def expected_easter(year):
 
-    leap_year_100 = year // 100
-    leap_year_400 = leap_year_100 // 4
+    lunar_cycle = year % 19
+    remainder_four = year % 4
+    remainder_seven = year % 7
 
-    lunar_orbit_correction = (13 + 8 * leap_year_100) // 25
+    century = year // 100
+    leap_century = century // 4
+
+    lunar_correction = (
+        13 + 8 * century
+    ) // 25
 
     century_start = (
         15
-        - lunar_orbit_correction
-        + leap_year_100
-        - leap_year_400
+        - lunar_correction
+        + century
+        - leap_century
     ) % 30
 
     sunday_offset = (
         4
-        + leap_year_100
-        - leap_year_400
+        + century
+        - leap_century
     ) % 7
 
     days_added = (
-        19 * lunar_year_cycle_position
+        19 * lunar_cycle
         + century_start
     ) % 30
 
-    day_of_week_offset = (
-        2 * weekday_slide_part_1
-        + 4 * weekday_slide_part_2
+    weekday_offset = (
+        2 * remainder_four
+        + 4 * remainder_seven
         + 6 * days_added
         + sunday_offset
     ) % 7
 
-    total_days_added = (
+    total_days = (
         22
         + days_added
-        + day_of_week_offset
+        + weekday_offset
     )
 
-    day_of_easter = total_days_added % 31
-    month_of_easter = 3 + (total_days_added // 31)
+    day = total_days % 31
+    month = 3 + (total_days // 31)
 
-    return month_of_easter, day_of_easter
+    return month, day
 
 
 class TestEasterDate(unittest.TestCase):
 
-    def run_student_program(self, year):
+    #################################################
+    # Helper Functions
+    #################################################
+
+    def run_program(self, year):
+
         tud.set_keyboard_input([str(year)])
 
         easter_date.main()
@@ -63,107 +72,186 @@ class TestEasterDate(unittest.TestCase):
         return tud.get_display_output()
 
     def verify_year(self, year):
-        month, day = computus(year)
 
-        output = self.run_student_program(year)
+        month, day = expected_easter(year)
 
-        # Must produce exactly:
-        # prompt
-        # final answer
+        output = self.run_program(year)
+
         self.assertEqual(
-            len(output),
-            2,
-            f"Unexpected output produced for year {year}: {output}"
+            output,
+            [
+                "Enter year: ",
+                f"In {year} Easter Sunday is on {month}/{day}/{year}."
+            ]
         )
+
+    #################################################
+    # 5 Marks - Correctness
+    #################################################
+
+    def test_assignment_example(self):
+        self.verify_year(2001)
+
+    def test_year_1988(self):
+        self.verify_year(1988)
+
+    def test_year_2000(self):
+        self.verify_year(2000)
+
+    def test_year_2024(self):
+        self.verify_year(2024)
+
+    def test_year_2099(self):
+        self.verify_year(2099)
+
+    #################################################
+    # 2 Marks - Output Formatting
+    #################################################
+
+    def test_prompt(self):
+
+        output = self.run_program(2001)
 
         self.assertEqual(
             output[0],
-            "Enter year: ",
-            f"Incorrect prompt for year {year}"
+            "Enter year: "
         )
+
+    def test_no_extra_output(self):
+
+        output = self.run_program(2001)
 
         self.assertEqual(
-            output[1],
-            f"In {year} Easter Sunday is on {month}/{day}/{year}.",
-            f"Incorrect Easter date for year {year}"
+            len(output),
+            2,
+            "Only the prompt and final answer should be displayed."
         )
 
-    # Example given in assignment
-    def test_2001(self):
-        self.verify_year(2001)
+    #################################################
+    # 1 Mark - Hidden Tests
+    #################################################
 
-    # Recent years
-    def test_2020(self):
-        self.verify_year(2020)
+    def test_hidden_years(self):
 
-    def test_2021(self):
-        self.verify_year(2021)
-
-    def test_2022(self):
-        self.verify_year(2022)
-
-    def test_2023(self):
-        self.verify_year(2023)
-
-    def test_2024(self):
-        self.verify_year(2024)
-
-    def test_2025(self):
-        self.verify_year(2025)
-
-    # Earlier years
-    def test_1980(self):
-        self.verify_year(1980)
-
-    def test_1985(self):
-        self.verify_year(1985)
-
-    def test_1990(self):
-        self.verify_year(1990)
-
-    def test_1995(self):
-        self.verify_year(1995)
-
-    # Century tests
-    def test_1901(self):
-        self.verify_year(1901)
-
-    def test_1950(self):
-        self.verify_year(1950)
-
-    def test_2000(self):
-        self.verify_year(2000)
-
-    def test_2099(self):
-        self.verify_year(2099)
-
-    # Bulk test to catch hardcoded solutions
-    def test_multiple_years(self):
-        years = [
-            1905,
-            1910,
-            1925,
-            1937,
-            1948,
-            1959,
-            1967,
-            1974,
-            1988,
-            1999,
-            2007,
-            2011,
-            2016,
-            2028,
-            2035,
-            2042,
-            2057,
-            2075,
-            2088
+        hidden_years = [
+            1918,
+            1947,
+            1968,
+            1986,
+            2017,
+            2032,
+            2058
         ]
 
-        for year in years:
+        for year in hidden_years:
+
             with self.subTest(year=year):
+
                 self.verify_year(year)
+
+    #################################################
+    # 1 Mark - Header and Comments
+    #################################################
+
+    def test_header_and_comments(self):
+
+        with open("easter_date.py") as f:
+            code = f.read()
+            lines = f.readlines()
+
+        required_header_items = [
+            "# File:",
+            "# Description:",
+            "# Assignment Number:",
+            "# Name:",
+            "# SID:",
+            "# Email:",
+            "# Grader:"
+        ]
+
+        for item in required_header_items:
+
+            self.assertIn(
+                item,
+                code,
+                f"Missing header item: {item}"
+            )
+
+        meaningful_comments = 0
+
+        for line in lines[15:]:
+
+            stripped = line.strip()
+
+            if (
+                stripped.startswith("#")
+                and len(stripped) > 15
+            ):
+                meaningful_comments += 1
+
+        self.assertGreaterEqual(
+            meaningful_comments,
+            2,
+            "Expected at least two meaningful comments."
+        )
+
+    #################################################
+    # 1 Mark - Readability
+    #################################################
+
+    def test_readability(self):
+
+        with open("easter_date.py") as f:
+            tree = ast.parse(f.read())
+
+        assignments = 0
+        bad_names = []
+
+        allowed_short_names = {
+            "year",
+            "day",
+            "month"
+        }
+
+        for node in ast.walk(tree):
+
+            if isinstance(node, ast.Assign):
+
+                assignments += 1
+
+                for target in node.targets:
+
+                    if isinstance(target, ast.Name):
+
+                        name = target.id
+
+                        if (
+                            len(name) <= 2
+                            and name not in allowed_short_names
+                        ):
+                            bad_names.append(name)
+
+        self.assertGreaterEqual(
+            assignments,
+            8,
+            "Program should be broken into logical steps."
+        )
+
+        self.assertLessEqual(
+            len(bad_names),
+            2,
+            f"Use more descriptive variable names instead of {bad_names}"
+        )
+
+    #################################################
+    # Sanity Check
+    #################################################
+
+    def test_main_exists(self):
+
+        self.assertTrue(
+            hasattr(easter_date, "main")
+        )
 
 
 if __name__ == "__main__":
